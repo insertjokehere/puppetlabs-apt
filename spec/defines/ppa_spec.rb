@@ -67,6 +67,41 @@ describe 'apt::ppa', :type => :define do
     }
   end
 
+  describe 'apt included, utopic' do
+    let :pre_condition do
+      'class { "apt": }'
+    end
+    let :facts do
+      {
+        :lsbdistrelease  => '14.10',
+        :lsbdistcodename => 'utopic',
+        :operatingsystem => 'Ubuntu',
+        :lsbdistid       => 'Ubuntu',
+        :osfamily        => 'Debian',
+      }
+    end
+    let :params do
+      {
+        'options' => '',
+      }
+    end
+    let(:title) { 'ppa:foo/bar' }
+    it { is_expected.to contain_package('software-properties-common') }
+    it { is_expected.to contain_exec('add-apt-repository-ppa:foo-bar').that_notifies('Exec[apt_update]').with({
+      'environment' => [],
+      'command'     => '/usr/bin/add-apt-repository  ppa:foo/bar',
+      'unless'      => '/usr/bin/test -s /etc/apt/sources.list.d/foo-ubuntu-bar-utopic.list',
+      'user'        => 'root',
+      'logoutput'   => 'on_failure',
+    })
+    }
+
+    it { is_expected.to contain_file('/etc/apt/sources.list.d/foo-ubuntu-bar-utopic.list').that_requires('Exec[add-apt-repository-ppa:foo-bar]').with({
+      'ensure' => 'file',
+    })
+    }
+  end
+
   describe 'apt included, proxy' do
     let :pre_condition do
       'class { "apt": proxy_host => "example.com" }'
